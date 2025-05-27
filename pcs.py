@@ -33,7 +33,7 @@ def validate_track_id(track):
 PCS_LOGIN_URL = "https://new.precisionconference.com/user/login"
 PCS_TRACK_LIST_URL = "https://new.precisionconference.com/get_table?table_id=user_chairing&conf_id=&type_id="
 PCS_SPREADSHEET_URL_PREFIX = "https://new.precisionconference.com/"
-PCS_SPREADSHEET_URL_SUFFIX = "/pubchair/csv/camera"
+PCS_SPREADSHEET_URL_SUFFIX = "/csv/camera"
 LIST_FILE_SUFFIX = "_camera_ready.csv"
 FIELDS_FILE_SUFFIX = "_fields.csv"
 
@@ -84,9 +84,24 @@ def get_camera_ready_csv(track_id, user, password, overwrite=True):
     r = pcs_session.get(PCS_LOGIN_URL)
     csrf_token = re.search(r'name="csrf_token" type="hidden" value="([a-z0-9#]+)"', r.text).groups()[0]
     r = pcs_session.post(PCS_LOGIN_URL, data={'username': user, 'password': password, 'csrf_token': csrf_token})
-    r = pcs_session.get(PCS_SPREADSHEET_URL_PREFIX + track_id + PCS_SPREADSHEET_URL_SUFFIX)
-    with open(list_file, "wb") as fd:
-        fd.write(r.content)
+
+    g = pcs_session.get(PCS_TRACK_LIST_URL)
+    roles = g.json()['data']
+    available_tracks = {}
+    for role in roles:
+        match = re.match(r'<a href="/(\w+)/(\w+)">(.+)</a>', role[3])
+        track_id_check = match.group(1)
+        role_id_check = match.group(2)
+        if role_id_check in ['pubchair', 'chair']:
+            available_tracks[track_id_check] = role_id_check
+    role_id = available_tracks[track_id]
+    
+    if role:
+        r = pcs_session.get(PCS_SPREADSHEET_URL_PREFIX + track_id + "/" + role_id + PCS_SPREADSHEET_URL_SUFFIX)
+        with open(list_file, "wb") as fd:
+            fd.write(r.content)
+    else:
+        print(f"You don't seem to have 'chair' or 'pubchair' access to track '{track_id}'.")    
     print("done.")
 
 
