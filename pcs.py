@@ -76,9 +76,9 @@ def get_camera_ready_csv(track_id, user, password, overwrite=True):
     if overwrite is False and os.path.exists(list_file):
         print("file already exists - skipping download")
         return
-    if os.path.exists(list_file) and file_is_current(list_file, 5 * 60):
-        print("file already downloaded less than five minutes ago - skipping download")
-        return
+    #if os.path.exists(list_file) and file_is_current(list_file, 5 * 60):
+        #print("file already downloaded less than five minutes ago - skipping download")
+        #return
     print("Downloading camera_ready.csv ... ")
     pcs_session = requests.Session()
     r = pcs_session.get(PCS_LOGIN_URL)
@@ -96,7 +96,7 @@ def get_camera_ready_csv(track_id, user, password, overwrite=True):
             available_tracks[track_id_check] = role_id_check
     role_id = available_tracks[track_id]
     
-    if role:
+    if role_id:
         r = pcs_session.get(PCS_SPREADSHEET_URL_PREFIX + track_id + "/" + role_id + PCS_SPREADSHEET_URL_SUFFIX)
         with open(list_file, "wb") as fd:
             fd.write(r.content)
@@ -308,8 +308,11 @@ def download(track_id, dl_flags, overwrite, start_index, status, tracks, guess_f
     if tracks:
         print("Checking which tracks you have access to...")
         available_tracks = get_available_tracks(user, password, True)
-        if track_id not in available_tracks.keys():
-            print(f"You don't seem to have 'chair' or 'pubchair' access to track '{track_id}'.")
+        if track_id != "X":
+            if track_id in available_tracks.keys():
+                print(f"\n###########################\n\nYou have '" + available_tracks[track_id] + "' access to track '{track_id}'.")
+            else:
+                print(f"\n###########################\n\nYou don't seem to have 'chair' or 'pubchair' access to track '{track_id}'.")    
         sys.exit(1)
 
     fields_file = f"{track_id}{FIELDS_FILE_SUFFIX}"
